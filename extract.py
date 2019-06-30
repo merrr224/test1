@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 
 import glob
 
-#files = glob.glob("./tmp/*")
+#files = glob.glob("/tmp/**/*")
 #for file in files:
 #    print(file)
 
