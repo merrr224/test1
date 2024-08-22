@@ -1,0 +1,109 @@
+import boto3
+import json
+import os
+
+def get_inline_policies_for_users():
+    iam_client = boto3.client('iam')
+    users = iam_client.list_users()['Users']
+    
+    inline_policies = []
+    
+    for user in users:
+        user_name = user['UserName']
+        policies = iam_client.list_user_policies(UserName=user_name)['PolicyNames']
+        
+        for policy_name in policies:
+            policy_document = iam_client.get_user_policy(
+                UserName=user_name,
+                PolicyName=policy_name
+            )['PolicyDocument']
+            
+            inline_policies.append({
+                'UserName': user_name,
+                'PolicyName': policy_name,
+                'PolicyDocument': policy_document
+            })
+    
+    return inline_policies
+
+def get_inline_policies_for_groups():
+    iam_client = boto3.client('iam')
+    groups = iam_client.list_groups()['Groups']
+    
+    inline_policies = []
+    
+    for group in groups:
+        group_name = group['GroupName']
+        policies = iam_client.list_group_policies(GroupName=group_name)['PolicyNames']
+        
+        for policy_name in policies:
+            policy_document = iam_client.get_group_policy(
+                GroupName=group_name,
+                PolicyName=policy_name
+            )['PolicyDocument']
+            
+            inline_policies.append({
+                'GroupName': group_name,
+                'PolicyName': policy_name,
+                'PolicyDocument': policy_document
+            })
+    
+    return inline_policies
+
+def get_inline_policies_for_roles():
+    iam_client = boto3.client('iam')
+    roles = iam_client.list_roles()['Roles']
+    
+    inline_policies = []
+    
+    for role in roles:
+        role_name = role['RoleName']
+        policies = iam_client.list_role_policies(RoleName=role_name)['PolicyNames']
+        
+        for policy_name in policies:
+            policy_document = iam_client.get_role_policy(
+                RoleName=role_name,
+                PolicyName=policy_name
+            )['PolicyDocument']
+            
+            inline_policies.append({
+                'RoleName': role_name,
+                'PolicyName': policy_name,
+                'PolicyDocument': policy_document
+            })
+    
+    return inline_policies
+
+def save_policy_document(entity_name, policy_name, policy_document):
+    # フォルダがなければ作成
+    if not os.path.exists('inline_policies'):
+        os.makedirs('inline_policies')
+    
+    # ポリシードキュメントをJSONファイルとして保存
+    file_name = f"{entity_name}_{policy_name}.json".replace('/', '_')
+    file_path = os.path.join('inline_policies', file_name)
+    
+    with open(file_path, 'w') as json_file:
+        json.dump(policy_document, json_file, indent=4)
+
+def main():
+    # ユーザーのインラインポリシーを取得
+    user_policies = get_inline_policies_for_users()
+    for policy in user_policies:
+        save_policy_document(policy['UserName'], policy['PolicyName'], policy['PolicyDocument'])
+        print(f"Saved user policy document for: {policy['UserName']} - {policy['PolicyName']}")
+
+    # グループのインラインポリシーを取得
+    group_policies = get_inline_policies_for_groups()
+    for policy in group_policies:
+        save_policy_document(policy['GroupName'], policy['PolicyName'], policy['PolicyDocument'])
+        print(f"Saved group policy document for: {policy['GroupName']} - {policy['PolicyName']}")
+
+    # ロールのインラインポリシーを取得
+    role_policies = get_inline_policies_for_roles()
+    for policy in role_policies:
+        save_policy_document(policy['RoleName'], policy['PolicyName'], policy['PolicyDocument'])
+        print(f"Saved role policy document for: {policy['RoleName']} - {policy['PolicyName']}")
+
+if __name__ == "__main__":
+    main()
